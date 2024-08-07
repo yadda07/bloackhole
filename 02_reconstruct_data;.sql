@@ -21,23 +21,19 @@ DECLARE
     col_name TEXT;
     col_value TEXT;
 BEGIN
-    -- Construire la requête dynamique
     query := format('SELECT audit_id, operation_type, audit_timestamp, old_values FROM %I.%I WHERE table_name = %L AND operation_type = %L AND audit_timestamp BETWEEN %L AND %L', 
                     p_schema_name, 'rip_avg_json', p_table_name, p_operation, p_start_time, p_end_time);
 
     RAISE NOTICE 'Requête %', query;
 
-    -- Exécuter la requête et boucler sur les résultats
     FOR record IN EXECUTE query
     LOOP
         RAISE NOTICE 'Enregistrement: audit_id = %, operation_type = %, audit_timestamp = %, old_values = %', 
             record.audit_id, record.operation_type, record.audit_timestamp, record.old_values;
         
-        -- Boucler sur chaque paire clé-valeur dans old_values
-        FOR col_name, col_value IN
+         FOR col_name, col_value IN
             SELECT key, value FROM jsonb_each_text(record.old_values)
         LOOP
-            -- Récupérer le type de colonne depuis metadata.column_avg
             SELECT ca.type_column INTO col_type
             FROM metadata.column_avg ca
             WHERE ca.schema_name = p_schema_name
